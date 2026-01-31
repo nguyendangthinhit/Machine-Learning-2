@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Script cào tiêu đề từ các trang báo
-Đọc links từ link.txt và lưu kết quả vào data.json
+Đọc links từ link.txt trong thư mục được chỉ định và lưu kết quả vào data.json
 """
 
 import requests
 from bs4 import BeautifulSoup
 import json
 import time
+import sys
+import os
 from typing import Dict
 
 class TitleScraper:
@@ -69,18 +71,18 @@ class TitleScraper:
             return title if title else "Không tìm thấy tiêu đề"
             
         except requests.exceptions.Timeout:
-            return f"Lỗi: Timeout khi truy cập {url}"
+            return f"Lỗi: Timeout khi truy cập"
         except requests.exceptions.RequestException as e:
-            return f"Lỗi: {str(e)}"
+            return f"Lỗi: {type(e).__name__}"
         except Exception as e:
-            return f"Lỗi không xác định: {str(e)}"
+            return f"Lỗi không xác định: {type(e).__name__}"
     
     def read_links(self, filename: str) -> list:
         """
         Đọc danh sách links từ file
         
         Args:
-            filename: Tên file chứa links
+            filename: Đường dẫn file chứa links
             
         Returns:
             List các URLs
@@ -91,10 +93,10 @@ class TitleScraper:
                 links = [line.strip() for line in f if line.strip()]
             return links
         except FileNotFoundError:
-            print(f"Lỗi: Không tìm thấy file {filename}")
+            print(f"❌ Lỗi: Không tìm thấy file {filename}")
             return []
         except Exception as e:
-            print(f"Lỗi khi đọc file: {e}")
+            print(f"❌ Lỗi khi đọc file: {e}")
             return []
     
     def scrape_all(self, input_file: str, output_file: str, delay: float = 1.0):
@@ -106,15 +108,15 @@ class TitleScraper:
             output_file: File JSON để lưu kết quả
             delay: Thời gian delay giữa các request (giây)
         """
-        print(f"Đọc links từ {input_file}...")
+        print(f"📂 Đọc links từ: {input_file}")
         links = self.read_links(input_file)
         
         if not links:
-            print("Không có link nào để cào!")
+            print("⚠️  Không có link nào để cào!")
             return
         
-        print(f"Tìm thấy {len(links)} links")
-        print("Bắt đầu cào tiêu đề...\n")
+        print(f"📝 Tìm thấy {len(links)} links")
+        print("🚀 Bắt đầu cào tiêu đề...\n")
         
         results = {}
         
@@ -124,7 +126,9 @@ class TitleScraper:
             title = self.get_title(url)
             results[url] = title
             
-            print(f"  → Tiêu đề: {title}\n")
+            # Hiển thị tiêu đề với độ dài giới hạn
+            display_title = title if len(title) <= 80 else title[:77] + "..."
+            print(f"  ✓ Tiêu đề: {display_title}\n")
             
             # Delay để tránh bị block (trừ request cuối cùng)
             if i < len(links):
@@ -134,24 +138,67 @@ class TitleScraper:
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, ensure_ascii=False, indent=2)
-            print(f"✓ Đã lưu kết quả vào {output_file}")
-            print(f"✓ Tổng cộng: {len(results)} tiêu đề")
+            print(f"\n✅ Đã lưu kết quả vào: {output_file}")
+            print(f"✅ Tổng cộng: {len(results)} tiêu đề")
         except Exception as e:
-            print(f"Lỗi khi lưu file: {e}")
+            print(f"❌ Lỗi khi lưu file: {e}")
 
 
 def main():
     """Hàm chính"""
+    # Kiểm tra tham số dòng lệnh
+    if len(sys.argv) < 2:
+        print("❌ Lỗi: Thiếu tên thư mục!")
+        print("\n📖 Cách sử dụng:")
+        print("   python cao.py <tên_thư_mục>")
+        print("\n💡 Ví dụ:")
+        print("   python cao.py thinh")
+        print("   python cao.py thien")
+        print("   python cao.py huy")
+        sys.exit(1)
+    
+    # Lấy tên thư mục từ tham số
+    folder_name = sys.argv[1]
+    
+    # Kiểm tra thư mục có tồn tại không
+    if not os.path.isdir(folder_name):
+        print(f"❌ Lỗi: Thư mục '{folder_name}' không tồn tại!")
+        print(f"\n💡 Các thư mục hiện có:")
+        # Liệt kê các thư mục con
+        subdirs = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
+        if subdirs:
+            for subdir in sorted(subdirs):
+                print(f"   - {subdir}")
+        else:
+            print("   (Không có thư mục con nào)")
+        sys.exit(1)
+    
+    # Xây dựng đường dẫn file
+    input_file = os.path.join(folder_name, 'link.txt')
+    output_file = os.path.join(folder_name, 'data.json')
+    
+    # Kiểm tra file link.txt có tồn tại không
+    if not os.path.isfile(input_file):
+        print(f"❌ Lỗi: Không tìm thấy file '{input_file}'")
+        print(f"💡 Hãy tạo file 'link.txt' trong thư mục '{folder_name}'")
+        sys.exit(1)
+    
+    print("=" * 60)
+    print(f"🎯 CÀO TIÊU ĐỀ - THƯ MỤC: {folder_name.upper()}")
+    print("=" * 60)
+    
     # Khởi tạo scraper
     scraper = TitleScraper()
     
-    # Cấu hình
-    input_file = 'link.txt'
-    output_file = 'data.json'
+    # Cấu hình delay
     delay = 1.0  # Delay 1 giây giữa các request
     
     # Chạy scraper
     scraper.scrape_all(input_file, output_file, delay)
+    
+    print("=" * 60)
+    print("✨ HOÀN THÀNH!")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
