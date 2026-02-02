@@ -144,25 +144,77 @@ class TitleScraper:
             print(f"❌ Lỗi khi lưu file: {e}")
 
 
+def process_folder(scraper, folder_name, delay=1.0):
+    """
+    Xử lý một thư mục
+    
+    Args:
+        scraper: TitleScraper instance
+        folder_name: Tên thư mục cần cào
+        delay: Thời gian delay giữa các request
+        
+    Returns:
+        True nếu thành công, False nếu có lỗi
+    """
+    # Xây dựng đường dẫn file
+    input_file = os.path.join(folder_name, 'links.txt')
+    output_file = os.path.join(folder_name, 'data.json')
+    
+    # Kiểm tra file link.txt có tồn tại không
+    if not os.path.isfile(input_file):
+        print(f"❌ Lỗi: Không tìm thấy file '{input_file}'")
+        print(f"💡 Hãy tạo file 'links.txt' trong thư mục '{folder_name}'")
+        return False
+    
+    print("=" * 60)
+    print(f"🎯 CÀO TIÊU ĐỀ - THƯ MỤC: {folder_name.upper()}")
+    print("=" * 60)
+    
+    # Chạy scraper
+    scraper.scrape_all(input_file, output_file, delay)
+    
+    print("=" * 60)
+    print(f"✨ HOÀN THÀNH THƯ MỤC: {folder_name.upper()}")
+    print("=" * 60)
+    print()
+    
+    return True
+
+
 def main():
     """Hàm chính"""
     # Kiểm tra tham số dòng lệnh
     if len(sys.argv) < 2:
         print("❌ Lỗi: Thiếu tên thư mục!")
         print("\n📖 Cách sử dụng:")
-        print("   python cao.py <tên_thư_mục>")
+        print("   python cao.py <tên_thư_mục_1> [tên_thư_mục_2] [tên_thư_mục_3] ...")
         print("\n💡 Ví dụ:")
-        print("   python cao.py thinh")
-        print("   python cao.py thien")
-        print("   python cao.py huy")
+        print('   python cao.py "NĐT" "Q.Huy" "Thiện"')
         sys.exit(1)
     
-    # Lấy tên thư mục từ tham số
-    folder_name = sys.argv[1]
+    # Lấy danh sách thư mục từ tham số
+    folder_names = sys.argv[1:]
     
-    # Kiểm tra thư mục có tồn tại không
-    if not os.path.isdir(folder_name):
-        print(f"❌ Lỗi: Thư mục '{folder_name}' không tồn tại!")
+    # Kiểm tra từng thư mục có tồn tại không
+    invalid_folders = []
+    valid_folders = []
+    
+    for folder_name in folder_names:
+        if not os.path.isdir(folder_name):
+            invalid_folders.append(folder_name)
+        else:
+            valid_folders.append(folder_name)
+    
+    # Nếu có thư mục không tồn tại, chỉ hiển thị cảnh báo
+    if invalid_folders:
+        print("⚠️  Cảnh báo: Các thư mục sau không tồn tại (sẽ bỏ qua):")
+        for folder in invalid_folders:
+            print(f"   - {folder}")
+        print()
+    
+    # Nếu không có thư mục hợp lệ nào
+    if not valid_folders:
+        print("❌ Không có thư mục hợp lệ nào để xử lý!")
         print(f"\n💡 Các thư mục hiện có:")
         # Liệt kê các thư mục con
         subdirs = [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith('.')]
@@ -172,20 +224,16 @@ def main():
         else:
             print("   (Không có thư mục con nào)")
         sys.exit(1)
+
     
-    # Xây dựng đường dẫn file
-    input_file = os.path.join(folder_name, 'link.txt')
-    output_file = os.path.join(folder_name, 'data.json')
-    
-    # Kiểm tra file link.txt có tồn tại không
-    if not os.path.isfile(input_file):
-        print(f"❌ Lỗi: Không tìm thấy file '{input_file}'")
-        print(f"💡 Hãy tạo file 'link.txt' trong thư mục '{folder_name}'")
-        sys.exit(1)
-    
+    # Hiển thị tổng quan
     print("=" * 60)
-    print(f"🎯 CÀO TIÊU ĐỀ - THƯ MỤC: {folder_name.upper()}")
+    print(f"🚀 BÁT ĐẦU CÀO {len(valid_folders)} THƯ MỤC")
     print("=" * 60)
+    for i, folder in enumerate(valid_folders, 1):
+        print(f"   {i}. {folder}")
+    print("=" * 60)
+    print()
     
     # Khởi tạo scraper
     scraper = TitleScraper()
@@ -193,11 +241,37 @@ def main():
     # Cấu hình delay
     delay = 1.0  # Delay 1 giây giữa các request
     
-    # Chạy scraper
-    scraper.scrape_all(input_file, output_file, delay)
+    # Thống kê
+    success_count = 0
+    failed_folders = []
+    
+    # Xử lý từng thư mục
+    for i, folder_name in enumerate(valid_folders, 1):
+        print(f"\n📍 [{i}/{len(valid_folders)}] Đang xử lý thư mục: {folder_name}")
+        print()
+        
+        if process_folder(scraper, folder_name, delay):
+            success_count += 1
+        else:
+            failed_folders.append(folder_name)
+        
+        # Delay giữa các thư mục (trừ thư mục cuối)
+        if i < len(valid_folders):
+            time.sleep(1)
+    
+    # Tổng kết
+    print("\n" + "=" * 60)
+    print("📊 TỔNG KẾT")
+    print("=" * 60)
+    print(f"✅ Thành công: {success_count}/{len(valid_folders)} thư mục")
+    
+    if failed_folders:
+        print(f"❌ Thất bại: {len(failed_folders)} thư mục")
+        for folder in failed_folders:
+            print(f"   - {folder}")
     
     print("=" * 60)
-    print("✨ HOÀN THÀNH!")
+    print("🎉 HOÀN TẤT TẤT CẢ!")
     print("=" * 60)
 
 
