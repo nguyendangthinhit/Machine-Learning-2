@@ -1,7 +1,6 @@
 # Google credentials (local only)
 credentials.json
 
-
 # local folders
 secrets/
 local_data/
