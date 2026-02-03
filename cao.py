@@ -25,7 +25,7 @@ class TitleScraper:
         self.session = requests.Session()
         self.session.headers.update(self.headers)
     
-    def get_title(self, url: str, timeout: int = 10) -> str:
+    def get_title(self, url: str, timeout: int = 30) -> str:
         """
         Lấy tiêu đề từ một URL
         
