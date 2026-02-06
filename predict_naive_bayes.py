@@ -17,7 +17,6 @@ def predict_drama(title):
         (mlb.classes_[i], prob * 100) 
         for i, prob in enumerate(probabilities) if prob >= threshold
     ]
-    # Nếu không có nhãn nào đủ mạnh, lấy nhãn có xác suất cao nhất
     if not labels_with_scores:
         max_idx = probabilities.argmax()
         labels_with_scores = [(mlb.classes_[max_idx], probabilities[max_idx] * 100)]
