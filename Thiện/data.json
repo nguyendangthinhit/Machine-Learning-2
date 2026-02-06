@@ -1,6 +1,18 @@
 {
-  "https://vnexpress.net/nu-sinh-an-mi-trong-gio-hoc-cai-tay-doi-voi-giang-vien-4954091.html": "Nữ sinh Đại học Phenikaa ăn mỳ trong lớp, cãi nhau tay đôi với thầy",
-  "https://vnexpress.net/tranh-luan-viec-xep-bac-si-noi-tru-chuyen-khoa-i-tuong-duong-thac-si-4972478.html": "Tranh luận việc xếp bác sĩ nội trú, chuyên khoa I tương đương thạc sĩ - Báo VnExpress",
-  "https://kenh14.vn/tphcm-truong-hoc-ra-quy-dinh-la-so-gd-dt-len-tieng-215260119193408358.chn": "TPHCM: Trường học ra quy định \"lạ\", Sở GD-ĐT lên tiếng",
-  "https://laodong.vn/su-kien-binh-luan/co-giao-truong-thpt-anhxtanh-bao-luc-va-xuc-pham-nu-sinh-o-dau-xin-loi-o-do-moi-cong-bang-1516531.ldo": "Không tìm thấy tiêu đề"
+  "https://vnexpress.net/nu-sinh-an-mi-trong-gio-hoc-cai-tay-doi-voi-giang-vien-4954091.html": {
+    "title": "Nữ sinh Đại học Phenikaa ăn mỳ trong lớp, cãi nhau tay đôi với thầy",
+    "tag": "Giáo dục"
+  },
+  "https://vnexpress.net/tranh-luan-viec-xep-bac-si-noi-tru-chuyen-khoa-i-tuong-duong-thac-si-4972478.html": {
+    "title": "Tranh luận việc xếp bác sĩ nội trú, chuyên khoa I tương đương thạc sĩ - Báo VnExpress",
+    "tag": "Giáo dục"
+  },
+  "https://kenh14.vn/tphcm-truong-hoc-ra-quy-dinh-la-so-gd-dt-len-tieng-215260119193408358.chn": {
+    "title": "TPHCM: Trường học ra quy định \"lạ\", Sở GD-ĐT lên tiếng",
+    "tag": "Giáo dục"
+  },
+  "https://laodong.vn/su-kien-binh-luan/co-giao-truong-thpt-anhxtanh-bao-luc-va-xuc-pham-nu-sinh-o-dau-xin-loi-o-do-moi-cong-bang-1516531.ldo": {
+    "title": "Không tìm thấy tiêu đề",
+    "tag": "Giáo dục"
+  }
 }

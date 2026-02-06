@@ -1,8 +1,26 @@
 {
-  "https://thanhnien.vn/canh-cao-giao-vien-xuc-pham-nhuc-ma-hoc-sinh-185241029145721143.htm": "Cảnh cáo giáo viên xúc phạm, nhục mạ học sinh",
-  "https://vnexpress.net/co-giao-bi-hoc-sinh-nhot-trong-lop-nem-do-vao-nguoi-4684814.html": "Cô giáo bị học sinh nhốt trong lớp, ném đồ vào người - Báo VnExpress",
-  "https://doisongphapluat.com.vn/mot-truong-hoc-o-tp-hcm-ra-quy-dinh-gay-tranh-cai-so-gd-dt-len-tieng-a710697.html": "Một trường học ở TP.HCM ra quy định gây tranh cãi, Sở GD-ĐT lên tiếng",
-  "https://tienphong.vn/tam-dinh-chi-giao-vien-tieng-anh-bi-to-sua-bai-thi-cua-nhieu-hoc-sinh-post1815484.tpo": "Tạm đình chỉ giáo viên Tiếng Anh bị tố sửa bài thi của nhiều học sinh | Báo điện tử Tiền Phong",
-  "https://vietnamnet.vn/nhung-ky-luc-chua-tung-co-o-cac-vu-be-boi-thi-thpt-quoc-gia-2018-466390.html": "Những kỷ lục chưa từng có ở vụ gian lận chấm thi THPT quốc gia 2018",
-  "https://vnexpress.net/hai-cuu-giao-vien-bi-khoi-to-trong-vu-trung-de-thi-tot-nghiep-thpt-4474748.html": "Hai cựu giáo viên bị khởi tố trong vụ trùng đề thi tốt nghiệp THPT"
+  "https://thanhnien.vn/canh-cao-giao-vien-xuc-pham-nhuc-ma-hoc-sinh-185241029145721143.htm": {
+    "title": "Cảnh cáo giáo viên xúc phạm, nhục mạ học sinh",
+    "tag": "Giáo dục"
+  },
+  "https://vnexpress.net/co-giao-bi-hoc-sinh-nhot-trong-lop-nem-do-vao-nguoi-4684814.html": {
+    "title": "Cô giáo bị học sinh nhốt trong lớp, ném đồ vào người - Báo VnExpress",
+    "tag": "Giáo dục"
+  },
+  "https://doisongphapluat.com.vn/mot-truong-hoc-o-tp-hcm-ra-quy-dinh-gay-tranh-cai-so-gd-dt-len-tieng-a710697.html": {
+    "title": "Một trường học ở TP.HCM ra quy định gây tranh cãi, Sở GD-ĐT lên tiếng",
+    "tag": "Giáo dục"
+  },
+  "https://tienphong.vn/tam-dinh-chi-giao-vien-tieng-anh-bi-to-sua-bai-thi-cua-nhieu-hoc-sinh-post1815484.tpo": {
+    "title": "Tạm đình chỉ giáo viên Tiếng Anh bị tố sửa bài thi của nhiều học sinh | Báo điện tử Tiền Phong",
+    "tag": "Giáo dục"
+  },
+  "https://vietnamnet.vn/nhung-ky-luc-chua-tung-co-o-cac-vu-be-boi-thi-thpt-quoc-gia-2018-466390.html": {
+    "title": "Những kỷ lục chưa từng có ở vụ gian lận chấm thi THPT quốc gia 2018",
+    "tag": "Giáo dục"
+  },
+  "https://vnexpress.net/hai-cuu-giao-vien-bi-khoi-to-trong-vu-trung-de-thi-tot-nghiep-thpt-4474748.html": {
+    "title": "Hai cựu giáo viên bị khởi tố trong vụ trùng đề thi tốt nghiệp THPT",
+    "tag": "Giáo dục"
+  }
 }

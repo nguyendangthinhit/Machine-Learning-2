@@ -25,7 +25,7 @@ class TitleScraper:
         self.session = requests.Session()
         self.session.headers.update(self.headers)
     
-    def get_title(self, url: str, timeout: int = 30) -> str:
+    def get_title(self, url: str, timeout: int = 10) -> str:
         """
         Lấy tiêu đề từ một URL
         
@@ -79,19 +79,40 @@ class TitleScraper:
     
     def read_links(self, filename: str) -> list:
         """
-        Đọc danh sách links từ file
+        Đọc danh sách links từ file với format: <url>: <tag>
         
         Args:
             filename: Đường dẫn file chứa links
             
         Returns:
-            List các URLs
+            List các tuples (url, tag)
         """
         try:
             with open(filename, 'r', encoding='utf-8') as f:
-                # Đọc từng dòng, loại bỏ khoảng trắng và dòng trống
-                links = [line.strip() for line in f if line.strip()]
-            return links
+                links_with_tags = []
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    # Tìm vị trí của ": " (dấu hai chấm có khoảng trắng) để tách URL và tag
+                    # Vì URL có thể chứa "://" nên cần tìm ": " thay vì chỉ ":"
+                    if ': ' in line:
+                        # Tách tại dấu ": " cuối cùng (hoặc đầu tiên sau https://)
+                        # Tìm vị trí sau "https://" hoặc "http://" để tách
+                        idx = line.find(': ', 8)  # Bắt đầu tìm sau "https://"
+                        if idx != -1:
+                            url = line[:idx].strip()
+                            tag = line[idx+1:].strip()
+                            links_with_tags.append((url, tag))
+                        else:
+                            # Không tìm thấy ": " phù hợp, coi toàn bộ là URL
+                            links_with_tags.append((line, "Không có tag"))
+                    else:
+                        # Nếu không có tag, để tag rỗng
+                        links_with_tags.append((line, "Không có tag"))
+                
+                return links_with_tags
         except FileNotFoundError:
             print(f"❌ Lỗi: Không tìm thấy file {filename}")
             return []
@@ -102,36 +123,43 @@ class TitleScraper:
     def scrape_all(self, input_file: str, output_file: str, delay: float = 1.0):
         """
         Cào tiêu đề từ tất cả links trong file và lưu kết quả
+        Format: <url> <title> <tag>
         
         Args:
-            input_file: File chứa danh sách links
+            input_file: File chứa danh sách links với format <url>: <tag>
             output_file: File JSON để lưu kết quả
             delay: Thời gian delay giữa các request (giây)
         """
         print(f"📂 Đọc links từ: {input_file}")
-        links = self.read_links(input_file)
+        links_with_tags = self.read_links(input_file)
         
-        if not links:
+        if not links_with_tags:
             print("⚠️  Không có link nào để cào!")
             return
         
-        print(f"📝 Tìm thấy {len(links)} links")
+        print(f"📝 Tìm thấy {len(links_with_tags)} links")
         print("🚀 Bắt đầu cào tiêu đề...\n")
         
         results = {}
         
-        for i, url in enumerate(links, 1):
-            print(f"[{i}/{len(links)}] Đang cào: {url}")
+        for i, (url, tag) in enumerate(links_with_tags, 1):
+            print(f"[{i}/{len(links_with_tags)}] Đang cào: {url}")
+            print(f"  📌 Tag: {tag}")
             
             title = self.get_title(url)
-            results[url] = title
+            
+            # Lưu theo format: url -> {"title": ..., "tag": ...}
+            results[url] = {
+                "title": title,
+                "tag": tag
+            }
             
             # Hiển thị tiêu đề với độ dài giới hạn
             display_title = title if len(title) <= 80 else title[:77] + "..."
             print(f"  ✓ Tiêu đề: {display_title}\n")
             
             # Delay để tránh bị block (trừ request cuối cùng)
-            if i < len(links):
+            if i < len(links_with_tags):
                 time.sleep(delay)
         
         # Lưu kết quả ra file JSON
@@ -163,7 +191,7 @@ def process_folder(scraper, folder_name, delay=1.0):
     # Kiểm tra file link.txt có tồn tại không
     if not os.path.isfile(input_file):
         print(f"❌ Lỗi: Không tìm thấy file '{input_file}'")
-        print(f"💡 Hãy tạo file 'links.txt' trong thư mục '{folder_name}'")
+        print(f"💡 Hãy tạo file 'link.txt' trong thư mục '{folder_name}'")
         return False
     
     print("=" * 60)
@@ -189,6 +217,9 @@ def main():
         print("\n📖 Cách sử dụng:")
         print("   python cao.py <tên_thư_mục_1> [tên_thư_mục_2] [tên_thư_mục_3] ...")
         print("\n💡 Ví dụ:")
+        print("   python cao.py thinh")
+        print("   python cao.py thinh thien")
+        print("   python cao.py thinh thien huy")
         print('   python cao.py "NĐT" "Q.Huy" "Thiện"')
         sys.exit(1)
     
