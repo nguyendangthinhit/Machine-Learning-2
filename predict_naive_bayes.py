@@ -3,9 +3,9 @@ import json
 from underthesea import word_tokenize
 
 try:
-    model, mlb = joblib.load('model_phanloai_drama.pkl') 
+    model, mlb = joblib.load('model_phanloai_drama_nb.pkl') 
 except FileNotFoundError:
-    print("Lỗi: Không tìm thấy file 'model_phanloai_drama.pkl'.")
+    print("Lỗi: Không tìm thấy file 'model_phanloai_drama_nb.pkl'.")
     exit()
 
 def predict_drama(title):
@@ -30,7 +30,7 @@ new_data = [
     "Shark Bình lên tiếng về việc sử dụng AI trong hệ sinh thái công nghệ",
     "Bắt tạm giam nhóm đối tượng lừa đảo chiếm đoạt tài sản qua mạng",
     "Tranh cãi giáo viên trung tâm Apax bị phụ huynh quây kín đòi tiền",
-    "Nữ sinh lộ clip nhạy cảm trên mạng xã hội gây xôn xao dư luận"
+    "Ca sĩ lộ clip với học sinh",
 ]
 
 print(f"\n{'Tiêu đề Drama':<60} | {'Chủ đề dự đoán (Độ tin cậy)'}")
