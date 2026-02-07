@@ -10,7 +10,7 @@ keywords= {
         "nền tảng", "robot", "thiết bị"
     ],
     "giải trí": [
-        "nghệ sĩ", "ca sĩ", "hoa hậu", "showbiz", "livestream", "drama", "Scandal", "clip nóng",
+        "nghệ sĩ", "ca sĩ", "hoa hậu", "showbiz", "livestream", "Scandal", "clip nóng",
         "tình ái", "ngoại tình", "đấu tố", "sao kê", "từ thiện", "fan", "anti-fan", 
         "hợp đồng âm nhạc", "showbiz", "hậu trường", "chia tay", "tiktok"
     ],
@@ -27,7 +27,6 @@ for tag, words in keywords.items():
 extended_keywords = [
     ("Bị tạm giữ hình sự vì hành vi lừa đảo", "kinh doanh"),
     ("Nghệ sĩ bị tạm giữ hình sự vì dùng chất cấm", "giải trí"),
-    ("Giáo viên bị tạm giữ hình sự vì xúc phạm học sinh", "giáo dục"),
     ("Học sinh, sinh viên, giáo viên, trường học, nữ sinh", "giáo dục"),
     ("Nữ sinh lộ clip với thầy giáo trong ký túc xá", "giáo dục, giải trí"),
     ("Ca sĩ lộ clip với học sinh tại nhà riêng", "giải trí, giáo dục"),
@@ -61,7 +60,6 @@ with open(file_path, 'r', encoding='utf-8') as f:
 X_train = []
 y_train = []
 
-
 for item in data.values():
     X_train.append(item['title'])
     tags = [t.strip().lower() for t in item['tag'].split(',')]
@@ -82,7 +80,12 @@ mlb = MultiLabelBinarizer()
 y_train = mlb.fit_transform(y_train)
 categories = mlb.classes_
 
-STOPWORDS = ["vụ", "bị", "về", "của", "và", "là", "các", "những", "một", "có", "đã", "đang", "được", "với", "cho"]
+STOPWORDS = [
+    "vụ", "bị", "về", "của", "và", "là", "các", "những", "một", "có", "đã", "đang", "được", "với", "cho", "ra", "vào",
+    "lộ", "nóng", "nhạy_cảm", "sốc", "xôn_xao", "scandal", "drama", "cực_căng", "hot", 
+    "đấu_tố", "bóc_phốt", "lên_tiếng", "trần_tình", "ồn_ào", "lùm_xùm", "nghi_vấn", 
+    "tranh_cãi", "bất_ngờ", "mới_nhất", "hiện_nay", "hé_lộ", "sự_thật"
+]
 def preprocess_drama(text):
     tokens_raw = word_tokenize(text.lower(), format="text")
     tokens = tokens_raw.split()
@@ -92,10 +95,7 @@ def preprocess_drama(text):
 X_train_preprocessed = [preprocess_drama(t) for t in X_train]
 
 # HUẤN LUYỆN
-model = make_pipeline(
-    TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True),
-    OneVsRestClassifier(MultinomialNB(alpha=0.1)) 
-)
+model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2),sublinear_tf=True,max_df=0.9),OneVsRestClassifier(MultinomialNB(alpha=0.1)))
 model.fit(X_train_preprocessed, y_train)
 
 # Lưu mô hình
