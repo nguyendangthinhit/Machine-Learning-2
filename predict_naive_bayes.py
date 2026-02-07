@@ -10,7 +10,6 @@ except FileNotFoundError:
 
 def predict_drama(title):
     clean_title = word_tokenize(title.lower(), format="text")
-
     probabilities = model.predict_proba([clean_title])[0]
     threshold = 0.3
     labels_with_scores = [
@@ -28,8 +27,7 @@ new_data = [
     "Ca sĩ Pháo và ViruSs livestream đấu tố nhau về hợp đồng âm nhạc",
     "Shark Bình lên tiếng về việc sử dụng AI trong hệ sinh thái công nghệ",
     "Bắt tạm giam nhóm đối tượng lừa đảo chiếm đoạt tài sản qua mạng",
-    "Tranh cãi giáo viên trung tâm Apax bị phụ huynh quây kín đòi tiền",
-    "Ca sĩ lộ clip với học sinh",
+    "Tranh cãi giáo viên trung tâm Apax bị phụ huynh quây kín đòi tiền"
 ]
 
 print(f"\n{'Tiêu đề Drama':<60} | {'Chủ đề dự đoán (Độ tin cậy)'}")
