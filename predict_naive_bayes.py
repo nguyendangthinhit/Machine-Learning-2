@@ -24,10 +24,16 @@ def predict_drama(title):
     return labels_with_scores
 
 new_data = [
-    "Ca sĩ Pháo và ViruSs livestream đấu tố nhau về hợp đồng âm nhạc",
-    "Shark Bình lên tiếng về việc sử dụng AI trong hệ sinh thái công nghệ",
-    "Bắt tạm giam nhóm đối tượng lừa đảo chiếm đoạt tài sản qua mạng",
-    "Tranh cãi giáo viên trung tâm Apax bị phụ huynh quây kín đòi tiền"
+    "Nghi vấn nam nghệ sĩ nổi tiếng hẹn hò với nữ sinh lớp 12",
+    "Clip hot girl lộ diện tại trường đại học gây xôn xao cộng đồng mạng",
+    "Ca sĩ bị kiện đòi bồi thường 10 tỷ đồng vì vi phạm hợp đồng quảng cáo",
+    "Giám đốc công ty giải trí bị bắt tạm giam vì chiếm đoạt tài sản",
+    "Sàn giao dịch tiền ảo sụp đổ khiến hàng nghìn nhà đầu tư trắng tay",
+    "Hacker tấn công hệ thống ngân hàng đánh cắp dữ liệu khách hàng",
+    "Hàng loạt phụ huynh tố trung tâm tiếng Anh lừa đảo tiền học phí",
+    "Hiệu trưởng trường quốc tế lên tiếng về lùm xùm tài chính",
+    "Ứng dụng AI mới giúp học sinh ôn thi tốt nghiệp hiệu quả",
+    "Thị trường bất động sản biến động sau thông tin mới nhất"
 ]
 
 print(f"\n{'Tiêu đề Drama':<60} | {'Chủ đề dự đoán (Độ tin cậy)'}")
