@@ -95,7 +95,7 @@ def preprocess_drama(text):
 X_train_preprocessed = [preprocess_drama(t) for t in X_train]
 
 # HUẤN LUYỆN
-model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2),sublinear_tf=True,max_df=0.9),OneVsRestClassifier(MultinomialNB(alpha=0.1)))
+model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2),max_df=0.9),OneVsRestClassifier(MultinomialNB(alpha=0.1)))
 model.fit(X_train_preprocessed, y_train)
 
 # Lưu mô hình
