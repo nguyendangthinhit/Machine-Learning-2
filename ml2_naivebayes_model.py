@@ -8,7 +8,7 @@ Original file is located at
 """
 
 # Nhớ cài thư viện rồi mới chạy nghe
-!pip install underthesea scikit-learn joblib
+# !pip install underthesea scikit-learn joblib
 keywords= {
     "giáo dục": [
         "nữ sinh", "nam sinh", "thầy giáo", "cô giáo", "giảng viên", "học đường", "học sinh",
@@ -32,7 +32,7 @@ keywords= {
 
 
 
-!pip install underthesea
+# !pip install underthesea
 
 import json
 import joblib
