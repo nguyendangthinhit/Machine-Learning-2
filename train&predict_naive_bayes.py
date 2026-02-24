@@ -1,0 +1,80 @@
+# Nhớ cài thư viện rồi mới chạy nghe   pip install underthesea scikit-learn joblib
+import json
+import joblib
+from underthesea import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.model_selection import train_test_split
+
+# Nạp dữ liệu
+file_path = 'data.json'
+with open(file_path, 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
+X=[]
+y=[]
+
+for item in data.values():
+    X.append(item['title'])
+    tags = [t.strip().lower() for t in item['tag'].split(',')]
+    y.append(tags)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# TIẾN HÀNH MLB VÀ PREPROCESS TRÊN DỮ LIỆU TỔNG
+mlb = MultiLabelBinarizer()
+y_train = mlb.fit_transform(y_train)
+categories = mlb.classes_
+
+STOPWORDS = [
+    "vụ", "bị", "về", "của", "và", "là", "các", "những", "một", "có", "đã", "đang", "được", "với", "cho", "ra", "vào",
+    "lộ", "nóng", "nhạy_cảm", "sốc", "xôn_xao", "scandal", "drama", "cực_căng", "hot", 
+    "đấu_tố", "bóc_phốt", "lên_tiếng", "trần_tình", "ồn_ào", "lùm_xùm", "nghi_vấn", 
+    "tranh_cãi", "bất_ngờ", "mới_nhất", "hiện_nay", "hé_lộ", "sự_thật"
+]
+def preprocess_drama(text):
+    tokens_raw = word_tokenize(text.lower(), format="text")
+    tokens = tokens_raw.split()
+    cleaned_text = " ".join([t for t in tokens if t not in STOPWORDS])
+    return cleaned_text
+# Sử dụng hàm preprocess của bạn trên X_train_final
+X_train_preprocessed = [preprocess_drama(t) for t in X_train]
+
+# HUẤN LUYỆN
+model = make_pipeline(TfidfVectorizer(ngram_range=(1, 2),min_df=1,max_df=0.8),OneVsRestClassifier(MultinomialNB(alpha=0.1)))
+model.fit(X_train_preprocessed, y_train)
+
+# Lưu mô hình
+joblib.dump((model, mlb), 'model_phanloai_drama_nb.pkl')
+print(f"HL thành công với {len(X_train)} mẫu dữ liệu!")
+
+#Dự đoán
+from sklearn.metrics import accuracy_score
+
+try:
+    model, mlb = joblib.load('model_phanloai_drama_nb.pkl')
+except FileNotFoundError:
+    print("Lỗi: Không tìm thấy file 'model_phanloai_drama_nb.pkl'")
+    exit()
+
+# Transform y_test into binary format using the fitted mlb
+y_test_binarized = mlb.transform(y_test)
+
+# Make predictions
+y_pred_binarized = model.predict(X_test)
+
+# Evaluate accuracy
+accuracy = accuracy_score(y_test_binarized, y_pred_binarized)
+
+print(f"Accuracy: {accuracy:.2f}")
+
+for i in range(len(X_test)):
+    original_title = X_test[i]
+    true_labels = mlb.inverse_transform(y_test_binarized[i].reshape(1, -1))[0]
+    predicted_labels = mlb.inverse_transform(y_pred_binarized[i].reshape(1, -1))[0]
+    print(f"Tiêu đề: {original_title}")
+    print(f"Nhãn thật: {list(true_labels)}")
+    print(f"Nhãn dự đoán: {list(predicted_labels)}\n")
