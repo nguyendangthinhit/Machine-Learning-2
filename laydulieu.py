@@ -17,35 +17,38 @@ df = pd.DataFrame(raw_data[1:], columns=raw_data[0])
 # 2. Làm sạch dữ liệu
 df['Người làm'] = df['Người làm'].astype(str).str.strip()
 df['Link'] = df['Link'].astype(str).str.strip()
-df['Tags'] = df['Tags'].astype(str).str.strip() # Làm sạch cột Tags
+df['Tags'] = df['Tags'].astype(str).str.strip()
 
-# --- LOGIC ĐIỀU HƯỚNG: CHUYỂN ĐỔI TÊN NGƯỜI LÀM ---
-# Nếu tên KHÔNG thuộc ['Thiện', 'Q.Huy'] thì đổi thành 'NĐT'
-df['Người làm_Final'] = df['Người làm'].apply(lambda x: x if x in ['Thiện', 'Q.Huy'] else 'NĐT')
+# --- CHỈ LẤY TỪ DÒNG 238 TRỞ ĐI (index 237 trong sheet, tương đương index 236 trong df vì bỏ header) ---
+# Dòng 238 trong sheet = index 237 (1-based) => trong df (đã bỏ header) = index 236
+df = df.iloc[236:]  # Lấy từ dòng 238 của sheet đến hết
 
-# Gom nhóm theo người làm đã quy đổi
-grouped = df.groupby('Người làm_Final')
+# --- KHÔNG CÒN QUY ĐỔI TÊN: mỗi người làm sẽ có thư mục riêng ---
+# Gom nhóm theo tên người làm gốc
+grouped = df.groupby('Người làm')
 
 print("--- Bắt đầu xuất file với định dạng <link>: <tag> ---")
 
 for name, group in grouped:
-    # Lấy cả Link và Tags, bỏ qua các dòng có Link trống
-    # Chúng ta sử dụng list các tuple (link, tag)
+    # Bỏ qua các dòng có tên trống
+    if not name or name == 'nan':
+        continue
+
+    # Lấy các dòng có Link
     data_list = group.loc[group['Link'] != '', ['Link', 'Tags']].values.tolist()
-    
+
     if data_list:
-        # Tạo thư mục theo tên
+        # Tạo thư mục theo tên người làm (nếu chưa có thì tự tạo)
         os.makedirs(name, exist_ok=True)
         file_path = os.path.join(name, 'links.txt')
-        
-        # Ghi dữ liệu vào file
+
+        # Ghi dữ liệu vào file (append để không ghi đè nếu chạy nhiều lần)
         with open(file_path, 'w', encoding='utf-8') as f:
             for item in data_list:
                 link = item[0]
                 tag = item[1]
-                # Ghi theo định dạng yêu cầu: <link>: <tag>
                 f.write(f"{link}: {tag}\n")
-        
-        print(f"[OK] Đã gom {len(data_list)} dòng vào thư mục: {name}/")
+
+        print(f"[OK] Đã gom {len(data_list)} dòng vào thư mục: {name}/links.txt")
 
 print("--- Hoàn thành ---")
