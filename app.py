@@ -533,7 +533,10 @@ def index():
         model_type = request.form.get("model_type", "nb").strip().lower()
 
         # Xử lý threshold người dùng nhập (theo %)
-        # Mặc định: dùng THRESHOLD chung; với RNN có thể override bằng best_threshold_rnn
+        # Mặc định:
+        # - Naive Bayes: 15%
+        # - RNN: 38% (có thể khác best_threshold_rnn khi train)
+        # - Trường hợp khác: dùng THRESHOLD chung
         used_threshold = THRESHOLD
         if raw_threshold:
             try:
@@ -546,10 +549,13 @@ def index():
                 # Nếu nhập không đúng số thì giữ nguyên THRESHOLD mặc định
                 pass
         else:
-            # Nếu user không nhập threshold và đang dùng RNN, ưu tiên best_threshold_rnn nếu có
-            if model_type == "rnn" and best_threshold_rnn is not None:
-                used_threshold = float(best_threshold_rnn)
-                threshold_percent = round(used_threshold * 100, 2)
+            # User không nhập threshold: chọn theo loại model
+            if model_type == "nb":
+                used_threshold = 0.15
+                threshold_percent = 15
+            elif model_type == "rnn":
+                used_threshold = 0.38
+                threshold_percent = 38
 
         # Chọn model dựa trên lựa chọn của người dùng
         selected_model = None
