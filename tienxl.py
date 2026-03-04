@@ -1,8 +1,8 @@
 import json
 import re
 
-INPUT_FILE  = "data.json"
-OUTPUT_FILE = "data.json"
+INPUT_FILE  = "data_rnn_new.json"
+OUTPUT_FILE = "data_rnn_new.json"
 
 # ── Bảng chuẩn hóa từng nhãn đơn ──────────────────────────────────────────
 LABEL_MAP = {

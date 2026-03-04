@@ -259,8 +259,8 @@ class RNNScraper:
 # XỬ LÝ THƯ MỤC
 # ──────────────────────────────────────────────────────────────────
 def process_folder(scraper: RNNScraper, folder: str, delay: float = 1.0) -> bool:
-    input_file  = os.path.join(folder, 'links.txt')
-    output_file = os.path.join(folder, 'data_rnn.json')   # ← file mới
+    input_file  = os.path.join(folder, 'linksnew.txt')
+    output_file = os.path.join(folder, 'data_rnn_new.json')   # ← file mới
 
     if not os.path.isfile(input_file):
         print(f"❌ Không tìm thấy '{input_file}'")

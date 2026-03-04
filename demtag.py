@@ -9,7 +9,7 @@ VALID_TAGS = {
     "giáo dục": "Giáo dục"
 }
 
-with open("data.json", "r", encoding="utf-8") as f:
+with open("data_rnn.json", "r", encoding="utf-8") as f:
     data = json.load(f)
 
 tag_count = defaultdict(int)
