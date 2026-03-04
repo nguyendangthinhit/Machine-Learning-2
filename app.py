@@ -22,7 +22,7 @@ app.secret_key = "change-this-to-a-random-secret-key"
 # - Giá trị thấp (0.1-0.2): Chọn nhiều nhãn hơn, dễ bị dự đoán sai
 # - Giá trị cao (0.4-0.6): Chọn ít nhãn hơn, chính xác hơn nhưng có thể bỏ sót
 # - Giá trị rất cao (>0.7): Chỉ chọn nhãn rất chắc chắn, có thể không có nhãn nào được chọn
-THRESHOLD = 0.3
+THRESHOLD = 0
 
 # ----- Đường dẫn model -----
 MODEL_NB_PATH = "model_phanloai_drama_nb.pkl"  # Naive Bayes model
@@ -457,7 +457,7 @@ PAGE_HTML = """
                 min="1"
                 max="99"
                 step="1"
-                value="{{ threshold_percent or 30 }}"
+                value="{% if threshold_percent is not none %}{{ threshold_percent }}{% elif model_type == 'rnn' %}38{% else %}15{% endif %}"
             >
 
             <button type="submit">Phân loại</button>
@@ -508,6 +508,30 @@ PAGE_HTML = """
             </div>
         {% endif %}
     </div>
+
+    <script>
+        (function() {
+            const modelSelect = document.getElementById('model_type');
+            const thresholdInput = document.getElementById('threshold');
+
+            function initThreshold() {
+                if (!thresholdInput) return;
+                const current = parseFloat(thresholdInput.value);
+                if (!current || isNaN(current)) {
+                    const model = modelSelect ? modelSelect.value : 'nb';
+                    thresholdInput.value = model === 'rnn' ? 38 : 15;
+                }
+            }
+
+            if (modelSelect && thresholdInput) {
+                modelSelect.addEventListener('change', function() {
+                    thresholdInput.value = this.value === 'rnn' ? 38 : 15;
+                });
+            }
+
+            window.addEventListener('load', initThreshold);
+        })();
+    </script>
 </body>
 </html>
 """
@@ -553,6 +577,7 @@ def index():
             if model_type == "nb":
                 used_threshold = 0.15
                 threshold_percent = 15
+                
             elif model_type == "rnn":
                 used_threshold = 0.38
                 threshold_percent = 38
