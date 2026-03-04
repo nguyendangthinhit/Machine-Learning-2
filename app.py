@@ -4,7 +4,11 @@ from urllib.parse import urlparse
 import ipaddress
 import re
 import socket
+import numpy as np
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
+from rnn_custom import AttentionLayer, build_input
 from cao import TitleScraper
 from underthesea import word_tokenize
 
@@ -18,12 +22,15 @@ app.secret_key = "change-this-to-a-random-secret-key"
 # - Giá trị thấp (0.1-0.2): Chọn nhiều nhãn hơn, dễ bị dự đoán sai
 # - Giá trị cao (0.4-0.6): Chọn ít nhãn hơn, chính xác hơn nhưng có thể bỏ sót
 # - Giá trị rất cao (>0.7): Chỉ chọn nhãn rất chắc chắn, có thể không có nhãn nào được chọn
-THRESHOLD = 0.3  
+THRESHOLD = 0.3
 
-# ----- Load models -----
+# ----- Đường dẫn model -----
 MODEL_NB_PATH = "model_phanloai_drama_nb.pkl"  # Naive Bayes model
-MODEL_RNN_PATH = "model_phanloai_drama_rnn.pkl"  # RNN model 
-# Load Naive Bayes model
+MODEL_RNN_PATH = "model_rnn.keras"            # RNN model (Keras)
+ARTIFACTS_RNN_PATH = "artifacts_rnn.pkl"      # artifacts: tokenizer, mlb, best_threshold, max_len, categories
+RNN_MAX_LEN = 150                             # default, sẽ override từ artifacts nếu có
+
+# ----- Load Naive Bayes model -----
 model_nb = None
 mlb_nb = None
 categories_nb = []
@@ -34,16 +41,34 @@ try:
 except Exception as e:
     print(f"⚠️  Không load được Naive Bayes model từ '{MODEL_NB_PATH}': {e}")
 
-# Load RNN model
+# ----- Load RNN model + artifacts -----
 model_rnn = None
+tokenizer_rnn = None
 mlb_rnn = None
 categories_rnn = []
+best_threshold_rnn = None
+
 try:
-    model_rnn, mlb_rnn = joblib.load(MODEL_RNN_PATH)
-    categories_rnn = mlb_rnn.classes_
-    print(f"✅ Đã load RNN model: {MODEL_RNN_PATH}")
+    # Không cần load compile thông tin loss/optimizer khi deploy
+    model_rnn = load_model(
+        MODEL_RNN_PATH,
+        custom_objects={"AttentionLayer": AttentionLayer},
+        compile=False,
+    )
+
+    artifacts = joblib.load(ARTIFACTS_RNN_PATH)
+    tokenizer_rnn = artifacts.get("tokenizer")
+    mlb_rnn = artifacts.get("mlb")
+    best_threshold_rnn = artifacts.get("best_threshold")
+    max_len_art = artifacts.get("max_len")
+    categories_rnn = artifacts.get("categories") or (mlb_rnn.classes_ if mlb_rnn is not None else [])
+
+    if isinstance(max_len_art, int) and max_len_art > 0:
+        RNN_MAX_LEN = max_len_art
+
+    print(f"✅ Đã load RNN model: {MODEL_RNN_PATH} + artifacts_rnn.pkl")
 except Exception as e:
-    print(f"⚠️  Không load được RNN model từ '{MODEL_RNN_PATH}': {e} (có thể chưa train)")
+    print(f"⚠️ Không load được RNN model hoặc artifacts: {e}")
 
 
 # ----- Tiền xử lý giống khi train -----
@@ -66,7 +91,7 @@ def _format_scraper_error(msg: str) -> str:
 
     text = msg.strip()
 
-    # Nếu là HTTPError có đoạn "Client Error:" thì chỉ lấy phần sau đó,
+    # Nếu là HTTPError có đoạn "Client Error:" thì chỉ lấy phầnF sau đó,
     # và thêm tiền tố "Lỗi: " cho rõ ràng.
     marker = "Client Error:"
     if marker in text:
@@ -80,6 +105,7 @@ def _format_scraper_error(msg: str) -> str:
 
     # Ngược lại giữ nguyên thông báo gốc
     return text
+
 
 _HOST_RE = re.compile(r"^[A-Za-z0-9.-]+$")
 
@@ -115,9 +141,15 @@ def normalize_and_validate_public_url(raw_url: str) -> tuple[str | None, str | N
 
     # Chặn localhost / host nội bộ phổ biến
     if host in ("localhost",):
-        return None, "URL không hợp lệ: hostname 'localhost' không dùng được trên Internet công cộng."
+        return (
+            None,
+            "URL không hợp lệ: hostname 'localhost' không dùng được trên Internet công cộng.",
+        )
     if host.endswith(".local"):
-        return None, "URL không hợp lệ: domain '.local' là domain nội bộ, không dùng trên Internet công cộng."
+        return (
+            None,
+            "URL không hợp lệ: domain '.local' là domain nội bộ, không dùng trên Internet công cộng.",
+        )
 
     # Host phải có ký tự hợp lệ
     if not _HOST_RE.match(host):
@@ -127,23 +159,35 @@ def normalize_and_validate_public_url(raw_url: str) -> tuple[str | None, str | N
     try:
         ip = ipaddress.ip_address(host)
         if not ip.is_global:
-            return None, "URL không hợp lệ: IP không phải public (private/loopback/link-local)."
+            return (
+                None,
+                "URL không hợp lệ: IP không phải public (private/loopback/link-local).",
+            )
         return url, None
     except ValueError:
         pass  # không phải IP -> tiếp tục check domain
 
     # Domain công cộng thường phải có dấu chấm (vd: vnexpress.net)
     if "." not in host:
-        return None, "URL không hợp lệ: domain phải có dạng public (ví dụ: vnexpress.net)."
+        return (
+            None,
+            "URL không hợp lệ: domain phải có dạng public (ví dụ: vnexpress.net).",
+        )
 
     # Thử resolve DNS để biết domain có tồn tại công khai hay không
     try:
         socket.setdefaulttimeout(3.0)
         addrinfos = socket.getaddrinfo(host, None)
     except socket.gaierror:
-        return None, "URL không hợp lệ: không phân giải được DNS (domain không tồn tại hoặc không truy cập được)."
+        return (
+            None,
+            "URL không hợp lệ: không phân giải được DNS (domain không tồn tại hoặc không truy cập được).",
+        )
     except Exception as e:
-        return None, f"URL không hợp lệ: lỗi khi kiểm tra DNS ({type(e).__name__}: {e})."
+        return (
+            None,
+            f"URL không hợp lệ: lỗi khi kiểm tra DNS ({type(e).__name__}: {e}).",
+        )
 
     # Nếu resolve ra toàn IP private/loopback -> coi như không public
     resolved_ips = []
@@ -489,6 +533,7 @@ def index():
         model_type = request.form.get("model_type", "nb").strip().lower()
 
         # Xử lý threshold người dùng nhập (theo %)
+        # Mặc định: dùng THRESHOLD chung; với RNN có thể override bằng best_threshold_rnn
         used_threshold = THRESHOLD
         if raw_threshold:
             try:
@@ -500,24 +545,31 @@ def index():
             except ValueError:
                 # Nếu nhập không đúng số thì giữ nguyên THRESHOLD mặc định
                 pass
+        else:
+            # Nếu user không nhập threshold và đang dùng RNN, ưu tiên best_threshold_rnn nếu có
+            if model_type == "rnn" and best_threshold_rnn is not None:
+                used_threshold = float(best_threshold_rnn)
+                threshold_percent = round(used_threshold * 100, 2)
 
         # Chọn model dựa trên lựa chọn của người dùng
         selected_model = None
-        selected_mlb = None
         selected_categories = []
-        
+
         if model_type == "nb":
             selected_model = model_nb
-            selected_mlb = mlb_nb
             selected_categories = categories_nb
-            if not selected_model or not selected_mlb:
+            if selected_model is None or selected_categories is None or len(selected_categories) == 0:
                 error = "Model Naive Bayes chưa được load. Hãy chắc chắn đã train và lưu model_phanloai_drama_nb.pkl."
         elif model_type == "rnn":
             selected_model = model_rnn
-            selected_mlb = mlb_rnn
             selected_categories = categories_rnn
-            if not selected_model or not selected_mlb:
-                error = "Model RNN chưa được load. Hãy chắc chắn đã train và lưu model_phanloai_drama_rnn.pkl."
+            if (
+                selected_model is None
+                or selected_categories is None
+                or len(selected_categories) == 0
+                or tokenizer_rnn is None
+            ):
+                error = "Model/tokenizer RNN chưa được load. Hãy chắc chắn đã train và lưu model_rnn.keras và artifacts_rnn.pkl."
         else:
             error = f"Loại model không hợp lệ: {model_type}"
 
@@ -539,21 +591,36 @@ def index():
 
         # 4. Nếu không có lỗi thì tiến hành phân loại
         if not error and title and selected_model:
-            processed = preprocess_drama(title)
-            
-            # Dự đoán với model đã chọn
-            try:
-                proba = selected_model.predict_proba([processed])[0]
-            except Exception as e:
-                error = f"Lỗi khi dự đoán với model {model_type.upper()}: {str(e)}"
-                title = None
+            # Naive Bayes: dùng pipeline predict_proba trên text đã preprocess
+            if model_type == "nb":
+                processed = preprocess_drama(title)
+                try:
+                    proba = selected_model.predict_proba([processed])[0]
+                except Exception as e:
+                    error = f"Lỗi khi dự đoán với model NB: {str(e)}"
+                    title = None
+                    proba = None
+
+            # RNN: dùng tokenizer + pad_sequences giống RNN_tranning
+            elif model_type == "rnn":
+                # Ghép input giống lúc train: chỉ dùng tiêu đề, không có content
+                text_input = build_input(title, "")
+                try:
+                    seq = tokenizer_rnn.texts_to_sequences([text_input])
+                    seq_pad = pad_sequences(seq, maxlen=RNN_MAX_LEN)
+                    proba = np.asarray(selected_model.predict(seq_pad)[0], dtype=float)
+                except Exception as e:
+                    error = f"Lỗi khi dự đoán với model RNN: {str(e)}"
+                    title = None
+                    proba = None
+            else:
                 proba = None
 
             if proba is not None:
                 # Sử dụng threshold đã cấu hình (mặc định hoặc người dùng nhập)
                 chosen_indices = [i for i, p in enumerate(proba) if p >= used_threshold]
                 if not chosen_indices:
-                    chosen_indices = [int(proba.argmax())]
+                    chosen_indices = [int(np.argmax(proba))]
 
                 labels = [selected_categories[i] for i in chosen_indices]
                 prob_table = [
