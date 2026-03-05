@@ -1,3 +1,5 @@
+#  file chuẩn hóa labels
+
 import json
 import re
 

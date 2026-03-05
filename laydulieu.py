@@ -1,3 +1,6 @@
+#  lấy links từ ggsheet (link data), chỉ only thịnh sài dc 
+
+
 import gspread
 import pandas as pd
 import os

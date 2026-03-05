@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Script gộp file từ nhiều thư mục
+Script gộp file từ nhiều thư mục Lí do vì sao gộp : chia để bt link do ai cào, check tiến độ quá trình làm việc + chia nhỏ để xử lý lối 
 Hỗ trợ: .txt, .json, .csv
 """
 

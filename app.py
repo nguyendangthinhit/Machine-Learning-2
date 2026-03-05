@@ -26,7 +26,7 @@ THRESHOLD = 0
 
 # ----- Đường dẫn model -----
 MODEL_NB_PATH = "model_phanloai_drama_nb.pkl"  # Naive Bayes model
-MODEL_RNN_PATH = "model_rnn.keras"            # RNN model (Keras)
+MODEL_RNN_PATH = "best_model.keras"            # RNN model (Keras)
 ARTIFACTS_RNN_PATH = "artifacts_rnn.pkl"      # artifacts: tokenizer, mlb, best_threshold, max_len, categories
 RNN_MAX_LEN = 150                             # default, sẽ override từ artifacts nếu có
 
