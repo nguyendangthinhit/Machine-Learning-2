@@ -1,213 +1,235 @@
-# Hướng dẫn sử dụng Script Cào Tiêu Đề (Version 2.0)
+# 📚 Hướng dẫn sử dụng hệ thống thu thập và huấn luyện dữ liệu
 
-## 📁 Cấu trúc thư mục
+Dự án này dùng để:
 
-```
-ml2/
-├── cao.py           # Script chính (đặt ở thư mục gốc)
-├── thinh/
-│   ├── link.txt     # Danh sách URLs của Thịnh
-│   └── data.json    # Kết quả cào của Thịnh
-├── thien/
-│   ├── link.txt     # Danh sách URLs của Thiên
-│   └── data.json    # Kết quả cào của Thiên
-└── huy/
-    ├── link.txt     # Danh sách URLs của Huy
-    └── data.json    # Kết quả cào của Huy
-```
+-   Thu thập dữ liệu bài báo
+-   Cào tiêu đề và nội dung
+-   Chuẩn hóa dữ liệu
+-   Train mô hình **Naive Bayes** và **RNN (BiLSTM + Attention)**
+-   Chạy **app demo phân loại tin tức**
 
-## 📦 Cài đặt
-Các thư viện cần thiết đã được note lại trong file requirements.txt, sử dụng câu lệnh sau để cài đặt
-```bash
-pip install -r requirements.txt
-```
+------------------------------------------------------------------------
 
-## 🚀 Cách sử dụng
+# 📁 Cấu trúc dự án
 
-### 1. Chuẩn bị thư mục
+ml2
+├── app.py
+├── laydulieu.py
+├── cao.py
+├── caornn.py
+├── gop.py
+├── chuanhoatag.py
+│
+├── preprocessing
+│   ├── tienxuly.py
+│   └── tienxuly_rnn.py
+│
+├── training
+│   ├── nb_trainining.py
+│   ├── rnn_trainining.py
+│   └── RNN_trainining.ipynb
+│
+├── models
+│   ├── model_phanloai_drama_nb.pkl
+│   ├── model_rnn.keras
+│   ├── best_model.keras
+│   └── artifacts_rnn.pkl
+│
+├── data
+│   ├── data.json
+│   └── data_rnn.json
+│
+├── members_data
+│   ├── LNH
+│   ├── NĐT
+│   ├── P.Huy
+│   ├── Q.Huy
+│   ├── Quang
+│   ├── Thiện
+│   └── Trung
+│
+├── requirements.txt
+├── README.md
+└── .gitignore
 
-Tạo thư mục cho từng người và file `link.txt` bên trong:
+------------------------------------------------------------------------
 
-```bash
-# Ví dụ cho thư mục "thinh"
-mkdir thinh
-cd thinh
-# Tạo file link.txt và thêm URLs vào
-```
+# 🚀 Quy trình thực hiện dự án
 
-### 2. Tạo file link.txt
+Pipeline gồm 5 bước chính.
 
-Trong mỗi thư mục (NĐT, Q.Huy, Thiện,....), tạo file `link.txt` với các URLs:
+------------------------------------------------------------------------
 
-```
-https://vnexpress.net/
-https://dantri.com.vn/
-https://thanhnien.vn/
-```
+# Bước 1: Lấy dữ liệu từ Google Drive 
 
-### 3. Chạy script
+Sử dụng:
 
-**Cú pháp:**
-```bash
-python cao.py <tên_thư_mục>
-```
+    laydulieu.py 
 
-**Ví dụ:**
+Script sẽ tải danh sách **links bài báo từ Google Drive**.
+Link: https://docs.google.com/spreadsheets/d/17rRLrSseMHHAZTTEQFezK3nXd0WOWF5Gi4I78gh-viE/edit?usp=drive_link
+⚠️ Lưu ý:
 
-```bash
-# Cào dữ liệu cho thư mục "thinh"
-python cao.py thinh
+-   Cần **credentials Google Drive**
+-   Chỉ **chủ Drive** mới có thể chạy bước này ( Hiện thầy không run được file này ạ )
 
-# Cào dữ liệu cho thư mục "thien"
-python cao.py thien
-
-# Cào dữ liệu cho thư mục "huy"
-python cao.py huy
-```
-
-### 4. Xem kết quả
-
-Kết quả sẽ được lưu trong file `data.json` bên trong thư mục tương ứng.
-
-Ví dụ sau khi chạy `python cao.py thinh`, file `thinh/data.json` sẽ có nội dung:
-
-```json
-{
-  "https://vnexpress.net/": "VnExpress - Báo tiếng Việt nhiều người xem nhất",
-  "https://dantri.com.vn/": "Dân trí - Báo điện tử Dân trí",
-  "https://thanhnien.vn/": "Báo Thanh Niên"
-}
-```
-
-## 🎯 Ví dụ đầy đủ
-
-```powershell
-PS D:\py\git\ml2> python cao.py thinh
-
-============================================================
-🎯 CÀO TIÊU ĐỀ - THƯ MỤC: THINH
-============================================================
-📂 Đọc links từ: thinh/link.txt
-📝 Tìm thấy 3 links
-🚀 Bắt đầu cào tiêu đề...
-
-[1/3] Đang cào: https://vnexpress.net/
-  ✓ Tiêu đề: VnExpress - Báo tiếng Việt nhiều người xem nhất
-
-[2/3] Đang cào: https://dantri.com.vn/
-  ✓ Tiêu đề: Dân trí - Báo điện tử Dân trí
-
-[3/3] Đang cào: https://thanhnien.vn/
-  ✓ Tiêu đề: Báo Thanh Niên
-
-✅ Đã lưu kết quả vào: thinh/data.json
-✅ Tổng cộng: 3 tiêu đề
-============================================================
-✨ HOÀN THÀNH!
-============================================================
-
-PS D:\py\git\ml2> ls thinh
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
--a----         31-1-2026  12:09 PM            380 data.json
--a----         31-1-2026  12:09 PM            155 link.txt
-```
-
-## ❌ Xử lý lỗi
-
-### Lỗi: Thiếu tên thư mục
-```bash
-PS D:\py\git\ml2> python cao.py
-
-❌ Lỗi: Thiếu tên thư mục!
-
-📖 Cách sử dụng:
-   python cao.py <tên_thư_mục>
-
-💡 Ví dụ:
-   python cao.py thinh
-   python cao.py thien
-   python cao.py huy
-```
-
-### Lỗi: Thư mục không tồn tại
-```bash
-PS D:\py\git\ml2> python cao.py abc
-
-❌ Lỗi: Thư mục 'abc' không tồn tại!
-
-💡 Các thư mục hiện có:
-   - huy
-   - thien
-   - thinh
-```
-
-### Lỗi: Không tìm thấy link.txt
-```bash
-PS D:\py\git\ml2> python cao.py thinh
-
-❌ Lỗi: Không tìm thấy file 'thinh/link.txt'
-💡 Hãy tạo file 'link.txt' trong thư mục 'thinh'
-```
-
-## 🔧 Tùy chỉnh
-
-Nếu bạn muốn thay đổi delay giữa các request, sửa trong file `cao.py`:
-
-```python
-def main():
-    # ...
-    delay = 1.0  # Thay đổi giá trị này (đơn vị: giây)
-    scraper.scrape_all(input_file, output_file, delay)
-```
+Sau khi chạy script, hệ thống sẽ tự động tạo thư mục cho từng
+thành viên trong nhóm và sinh file `link.txt` bên trong mỗi thư mục.
 
 Ví dụ:
-- `delay = 0.5` → Delay 0.5 giây (nhanh hơn)
-- `delay = 2.0` → Delay 2 giây (an toàn hơn)
-- `delay = 3.0` → Delay 3 giây (rất an toàn)
 
-## 💡 Mẹo sử dụng
+    <member_name>/link.txt
 
-1. **Chạy cho nhiều thư mục:**
-   ```bash
-   python cao.py thinh
-   python cao.py thien
-   python cao.py huy
-   ```
+------------------------------------------------------------------------
 
-2. **Kiểm tra kết quả nhanh:**
-   ```bash
-   # Windows PowerShell
-   cat thinh/data.json
-   
-   # Linux/Mac
-   cat thinh/data.json
-   ```
+# Bước 2: Cào dữ liệu
 
-3. **Backup dữ liệu cũ trước khi chạy lại:**
-   File `data.json` sẽ bị ghi đè mỗi lần chạy script
+Sau khi có `link.txt`, tiến hành crawl.
 
-## ⚠️ Lưu ý quan trọng
+## Cào tiêu đề (Naive Bayes)
 
-- Script tự động delay 1 giây giữa các request để tránh bị chặn
-- Tôn trọng `robots.txt` của các website
-- Không cào quá nhiều trang cùng lúc
-- Một số trang có thể chặn request nếu cào quá nhanh
+    python cao.py NĐT
+    python cao.py Thiện
+    python cao.py Q.Huy
 
-## 🎨 Tính năng
+Kết quả:
 
-✅ Tự động phát hiện tiêu đề từ nhiều nguồn:
-- Thẻ `<title>`
-- Meta tag `og:title`
-- Meta tag `twitter:title`
-- Thẻ `<h1>` đầu tiên
+    data.json
 
-✅ Xử lý lỗi tự động và thông báo rõ ràng
+------------------------------------------------------------------------
 
-✅ Hiển thị tiến trình real-time với emoji
+## Cào tiêu đề + 100 từ đầu (RNN)
 
-✅ Lưu kết quả vào đúng thư mục được chỉ định
+    python cao_rnn.py NĐT
+    python cao_rnn.py Thiện
+    python cao_rnn.py Q.Huy
 
-✅ Kiểm tra thư mục và file tự động
+Kết quả:
 
+    data_rnn.json
+
+------------------------------------------------------------------------
+
+# 🎯 Mục đích chia thư mục
+
+Mỗi thành viên có dataset riêng để:
+
+-   Biết dữ liệu do **ai crawl**
+-   Dễ **debug lỗi**
+-   Dễ **quản lý task**
+
+Ví dụ:
+
+    NĐT/data.json lỗi → Thịnh sửa
+
+------------------------------------------------------------------------
+
+# Bước 3: Gộp dữ liệu
+
+Chạy:
+
+    python gop.py
+
+Kết quả:
+
+    data.json
+    data_rnn.json
+
+------------------------------------------------------------------------
+
+# Bước 4: Chuẩn hóa tag
+
+Chạy:
+
+    python chuanhoatag.py
+
+Script sẽ chuẩn hóa các tag khác nhau như:
+
+    Công nghệ
+    Công Nghệ
+    Cong nghe
+    Tech
+
+------------------------------------------------------------------------
+
+# Bước 5: Train model
+
+Train trên **Google Colab**.
+
+## Naive Bayes
+
+    train_nb.ipynb
+
+Pipeline:
+
+    TF-IDF → MultinomialNB → OneVsRestClassifier
+
+------------------------------------------------------------------------
+
+## RNN
+
+    train_rnn.ipynb
+
+Kiến trúc:
+
+    Embedding → BiLSTM → Attention → Dense
+
+Sau khi train sẽ xuất:
+
+    model_nb.pkl
+    model_rnn.h5
+
+------------------------------------------------------------------------
+
+# Bước 6: Chạy app demo
+
+    python app.py
+
+App sẽ:
+
+-   Load model NB
+-   Load model RNN
+-   Nhập văn bản
+-   So sánh kết quả
+
+------------------------------------------------------------------------
+
+# 📦 Cài thư viện
+
+    pip install -r requirements.txt
+
+------------------------------------------------------------------------
+
+# ⚠️ Lưu ý
+
+-   Không push **credentials** lên Git
+-   Không crawl quá nhanh
+-   Kiểm tra dữ liệu lỗi trước khi train
+
+------------------------------------------------------------------------
+
+# Pipeline tổng thể
+
+    Google Drive
+         ↓
+    laydulieu.py
+         ↓
+    link.txt
+         ↓
+    cao.py / cao_rnn.py
+         ↓
+    data.json / data_rnn.json
+         ↓
+    gop.py
+         ↓
+    dataset chung
+         ↓
+    chuanhoatag.py
+         ↓
+    dataset chuẩn
+         ↓
+    train_nb / train_rnn
+         ↓
+    model
+         ↓
+    app.py
