@@ -16,15 +16,10 @@ ml2/
     └── data.json    # Kết quả cào của Huy
 ```
 
-## ⚙️ Yêu cầu
-
-- Python 3.6+
-- Thư viện: `requests`, `beautifulsoup4`
-
 ## 📦 Cài đặt
-
+Các thư viện cần thiết đã được note lại trong file requirements.txt, sử dụng câu lệnh sau để cài đặt
 ```bash
-pip install requests beautifulsoup4
+pip install -r requirements.txt
 ```
 
 ## 🚀 Cách sử dụng
@@ -42,7 +37,7 @@ cd thinh
 
 ### 2. Tạo file link.txt
 
-Trong mỗi thư mục (thinh, thien, huy), tạo file `link.txt` với các URLs:
+Trong mỗi thư mục (NĐT, Q.Huy, Thiện,....), tạo file `link.txt` với các URLs:
 
 ```
 https://vnexpress.net/
@@ -216,53 +211,3 @@ Ví dụ:
 
 ✅ Kiểm tra thư mục và file tự động
 
-## 📞 Hỗ trợ
-
-Nếu gặp vấn đề, kiểm tra:
-1. Đã cài đặt đủ thư viện chưa?
-2. File `link.txt` có tồn tại trong thư mục không?
-3. URLs trong `link.txt` có đúng định dạng không?
-4. Có kết nối internet không?
-
-
-📊 Google Sheets Data Organizer (laydulieu.py)
-Dự án này là một thành phần trong hệ thống Machine-Learning-2, tập trung vào việc tự động hóa quy trình thu thập và phân loại dữ liệu từ Google Sheets để phục vụ cho việc huấn luyện mô hình.
-
-📝 Giới thiệu
-Tệp laydulieu.py thực hiện việc kết nối với Google API, tải dữ liệu bảng tính, làm sạch và phân chia các đường dẫn (URLs) vào từng thư mục riêng biệt dựa trên người phụ trách.
-
-✨ Các tính năng cốt lõi
-Xác thực tự động: Sử dụng Service Account (OAuth2) để truy cập Google Drive và Google Sheets API mà không cần can thiệp thủ công.
-
-Làm sạch dữ liệu: Tự động loại bỏ khoảng trắng thừa, xử lý các ô rỗng và chuẩn hóa cột "Người làm" bằng thư viện Pandas.
-
-Logic điều hướng thông minh:
-
-Duy trì dữ liệu riêng biệt cho Thiện và Q.Huy.
-
-Tự động gộp tất cả dữ liệu từ các thành viên khác (tuấn, quốc, thịnh,...) hoặc các ô trống về cho NĐT quản lý.
-
-Quản lý hệ thống tệp: Tự động tạo thư mục theo tên người dùng và xuất danh sách URL ra file links.txt.
-
-🛠 Yêu cầu hệ thống
-1. Thư viện cần thiết
-Bạn cần cài đặt các thư viện sau để đảm bảo script vận hành đúng logic:
-
-Bash
-pip install gspread pandas oauth2client
-📁 Cấu trúc thư mục đầu ra
-Sau khi chạy script, dữ liệu sẽ được tổ chức như sau:
-
-Plaintext
-D:\py\git\ml2\
-├── NĐT/
-│   └── links.txt  <-- Chứa link của NĐT và những người khác
-├── Q.Huy/
-│   └── links.txt  <-- Chứa link của Q.Huy
-└── Thiện/
-    └── links.txt  <-- Chứa link của Thiện
-⚙️ Cách thực thi
-Mở terminal tại thư mục dự án và chạy lệnh:
-
-Bash
-python laydulieu.py

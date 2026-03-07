@@ -18,6 +18,8 @@ Original file is located at
 # ── CELL 1: CÀI ĐẶT ─────────────────────────────────────────────
 !pip install underthesea tensorflow scikit-learn joblib matplotlib -q
 
+
+
 # ── CELL 2: IMPORT ──────────────────────────────────────────────
 import json
 import numpy as np
@@ -47,10 +49,10 @@ print("GPU:", tf.config.list_physical_devices('GPU'))
 FILE_PATH    = 'data_rnn.json'   # file output của cao_rnn.py
 MAX_LEN      = 150               # độ dài chuỗi: tiêu đề ~30 + content ~100 + SEP = ~150
 VOCAB_SIZE   = 10000             # giữ 10000 từ phổ biến nhất
-EMBED_DIM    = 128               # chiều vector embedding
-LSTM_UNITS   = 64                # số unit mỗi chiều LSTM (tổng BiLSTM = 128)
-DENSE_UNITS  = 64                # số neuron lớp Dense
-DROPOUT_RATE = 0.4               # tỷ lệ dropout
+EMBED_DIM    = 128               # chiều vector embedding -> 64
+LSTM_UNITS   = 64                # số unit mỗi chiều LSTM (tổng BiLSTM = 128) ->32
+DENSE_UNITS  = 64                # số neuron lớp Dense -> 32
+DROPOUT_RATE = 0.5               # tỷ lệ dropout -> 0.5
 BATCH_SIZE   = 16                # nhỏ vì dataset nhỏ
 EPOCHS       = 60                # EarlyStopping sẽ dừng sớm hơn
 TEST_SIZE    = 0.15              # 15% dùng để test
@@ -266,20 +268,109 @@ class AttentionLayer(tf.keras.layers.Layer):
     def get_config(self):
         return super().get_config()
 
-# ── CELL 8: BUILD MODEL ──────────────────────────────────────────
-#
-# KIẾN TRÚC (từ ngoài vào trong):
-#
-# INPUT (batch, 150)
-#   → Embedding       (batch, 150, 128)   học vector từ
-#   → SpatialDropout  chống overfit embedding
-#   → BiLSTM(64)      (batch, 150, 128)   hiểu ngữ cảnh 2 chiều
-#   → Dropout         chống overfit LSTM
-#   → Attention       (batch, 128)        tóm tắt câu
-#   → Dense(64, relu) (batch, 64)         học pattern phân loại
-#   → Dropout         chống overfit Dense
-#   → Dense(4, sigmoid)(batch, 4)         xác suất 4 nhãn
-# OUTPUT (batch, 4)  — mỗi giá trị ∈ [0,1]
+# # ── CELL 8: BUILD MODEL ──────────────────────────────────────────
+# #
+# # INPUT (batch, 150)
+# # ─────────────────────────────────────────────────────────────
+# # Mỗi bài viết đã được chuyển thành dãy 150 con số (index từ)
+# # Ví dụ: "Học sinh đến trường" → [42, 187, 531, 0, 0, ..., 0]
+# #         (padding 0 cho đủ 150)
+# # batch = số bài xử lý cùng lúc (ví dụ 32 bài/lần)
+
+#   → Embedding (batch, 150, 128)
+# # ─────────────────────────────────────────────────────────────
+# # Chuyển mỗi index từ → vector 128 chiều có ý nghĩa
+# # Ví dụ:
+# #   "học sinh" → [0.2, -0.5, 0.8, ..., 0.1]  (128 số)
+# #   "giáo viên"→ [0.3, -0.4, 0.7, ..., 0.2]  (gần giống vì nghĩa gần nhau)
+# #   "điện thoại"→[-0.9, 0.1, -0.3, ..., 0.6] (xa vì nghĩa khác)
+# # Lớp này tự học trong quá trình training, không cần định nghĩa trước
+
+#   → SpatialDropout
+# # ─────────────────────────────────────────────────────────────
+# # Chống overfit bằng cách tắt ngẫu nhiên toàn bộ vector của một số từ
+# # Ví dụ: tắt từ "học sinh" trong batch này → mô hình buộc phải
+# # dựa vào các từ khác để hiểu câu, không được "ỷ lại" từ nào
+# # (khác Dropout thường: Dropout tắt từng ô đơn lẻ, SpatialDropout tắt cả vector)
+
+#   → BiLSTM(64) (batch, 150, 128)
+# # ─────────────────────────────────────────────────────────────
+# # Bi = 2 chiều: đọc câu từ trái→phải VÀ từ phải→trái đồng thời
+# # LSTM(64) mỗi chiều → ghép lại thành 128
+# #
+# # Ví dụ câu: "Học sinh [giỏi] được khen"
+# #   Chiều thuận (→): "Học sinh" → biết "giỏi" là tính từ chủ thể
+# #   Chiều ngược (←): "được khen" → biết "giỏi" là lý do được khen
+# #   Kết hợp 2 chiều → hiểu "giỏi" trong ngữ cảnh đầy đủ hơn
+# #
+# # Sau bước này mỗi từ có 1 vector 128 chiều chứa ngữ cảnh xung quanh nó
+
+#   → Dropout
+# # ─────────────────────────────────────────────────────────────
+# # Tắt ngẫu nhiên một số ô trong output của BiLSTM
+# # Buộc mô hình không phụ thuộc vào một vài đặc trưng cố định
+
+#   → Attention (batch, 128)
+# # ─────────────────────────────────────────────────────────────
+# # Đây là bước quan trọng nhất — tóm tắt 150 từ thành 1 vector duy nhất
+# #
+# # Vấn đề: BiLSTM trả ra 150 vector (mỗi từ 1 vector), nhưng
+# #          lớp tiếp theo chỉ cần 1 vector đại diện cho cả câu
+# #
+# # Cách Attention giải quyết:
+# #   Bước 1 — Tính điểm quan trọng cho từng từ:
+# #     "Học sinh"   → 0.05  (ít quan trọng)
+# #     "đạt giải"   → 0.45  (rất quan trọng!)
+# #     "toán"       → 0.35  (quan trọng)
+# #     "hôm qua"    → 0.02  (ít quan trọng)
+# #     (padding 0)  → 0.00  (bỏ qua hoàn toàn)
+# #     Tổng = 1.00  (softmax đảm bảo tổng = 1)
+# #
+# #   Bước 2 — Nhân điểm với vector của từng từ rồi cộng lại:
+# #     vector_câu = 0.05×v("Học sinh")
+# #                + 0.45×v("đạt giải")
+# #                + 0.35×v("toán")
+# #                + 0.02×v("hôm qua") + ...
+# #
+# #   → Output: 1 vector 128 chiều, trong đó từ quan trọng
+# #     đóng góp nhiều hơn vào vector đại diện cuối cùng
+# #
+# # So sánh với không dùng Attention:
+# #   Không Attention → thường lấy vector từ cuối cùng của LSTM
+# #                     → bị ảnh hưởng nhiều bởi từ cuối, quên từ đầu
+# #   Có Attention    → nhìn toàn bộ câu, chú ý đúng chỗ quan trọng
+
+#   → Dense(64, relu) (batch, 64)
+# # ─────────────────────────────────────────────────────────────
+# # Học các pattern phân loại từ vector 128 chiều vừa có
+# # relu: giá trị âm → 0, giữ nguyên giá trị dương
+# # Giảm từ 128 → 64 chiều, ép mô hình học đặc trưng cô đọng hơn
+
+#   → Dropout
+# # ─────────────────────────────────────────────────────────────
+# # Chống overfit lần cuối trước khi ra kết quả
+
+#   → Dense(4, sigmoid) (batch, 4)
+# # ─────────────────────────────────────────────────────────────
+# # 4 = số nhãn (công nghệ, giáo dục, giải trí, kinh doanh)
+# # sigmoid: ép mỗi giá trị về [0, 1] → xác suất độc lập từng nhãn
+# #
+# # Ví dụ output:
+# #   [0.91, 0.05, 0.08, 0.76]
+# #    ↑            ↑
+# #    công nghệ    kinh doanh  → bài này thuộc 2 nhãn
+# #
+# # Dùng sigmoid thay vì softmax vì đây là đa nhãn —
+# # một bài có thể thuộc nhiều nhãn cùng lúc
+# # (softmax ép tổng = 1, chỉ dùng cho phân loại 1 nhãn duy nhất)
+
+# # OUTPUT (batch, 4) — mỗi giá trị ∈ [0,1]
+# # ─────────────────────────────────────────────────────────────
+# # So với threshold để quyết định gán nhãn hay không:
+# #   0.91 ≥ 0.76 (threshold công nghệ)  → GÁN nhãn công nghệ ✓
+# #   0.05 < 0.30 (threshold giáo dục)   → bỏ qua ✗
+# #   0.08 < 0.19 (threshold giải trí)   → bỏ qua ✗
+# #   0.76 ≥ 0.07 (threshold kinh doanh) → GÁN nhãn kinh doanh ✓
 
 def build_model(vocab_size, embed_dim, max_len, lstm_units,
                 dense_units, dropout_rate, num_labels):
@@ -412,25 +503,25 @@ f1_callback = MacroF1Callback(X_val, y_val)
 
 callbacks = [
     EarlyStopping(
-        monitor             = 'val_loss',
-        patience            = 10,
-        restore_best_weights= True,
-        verbose             = 1
+        monitor='val_loss',      # ← đổi lại val_loss
+        patience=12,             # tăng patience lên 12
+        restore_best_weights=True,
+        verbose=1
     ),
     ReduceLROnPlateau(
-        monitor  = 'val_loss',
-        factor   = 0.5,
-        patience = 4,
-        min_lr   = 1e-6,
-        verbose  = 1
+        monitor='val_loss',
+        factor=0.5,
+        patience=4,
+        min_lr=1e-6,
+        verbose=1
     ),
     ModelCheckpoint(
-        filepath        = 'best_model.keras',
-        monitor         = 'val_loss',
-        save_best_only  = True,
-        verbose         = 0
+        filepath='best_model.keras',
+        monitor='val_loss',
+        save_best_only=True,
+        verbose=0
     ),
-    f1_callback
+    f1_callback   # giữ để xem val_f1 nhưng không dùng để stop
 ]
 
 history = model.fit(
@@ -479,21 +570,24 @@ print("Đã lưu: learning_curve_rnn.png")
 print(history.history)
 
 # ── CELL 12: TÌM THRESHOLD TỐI ƯU ──────────────────────────────
-y_pred_proba = model.predict(X_test_seq, verbose=0)
+thresholds_per_label = {
+    'công nghệ' : 0.88,
+    'giáo dục'  : 0.23,
+    'giải trí'  : 0.05,
+    'kinh doanh': 0.35,
+}
 
-best_threshold, best_f1 = 0.5, 0.0
+threshold_array = np.array([thresholds_per_label[c] for c in mlb.classes_])
+y_pred_custom   = (y_pred_proba >= threshold_array).astype(int)
 
-for threshold in np.arange(0.05, 0.95, 0.01):
-    y_tmp = (y_pred_proba >= threshold).astype(int)
-    for i, row in enumerate(y_tmp):
-        if row.sum() == 0:
-            y_tmp[i][np.argmax(y_pred_proba[i])] = 1
-    f1 = f1_score(y_test, y_tmp, average='macro', zero_division=0)
-    if f1 > best_f1:
-        best_f1, best_threshold = f1, threshold
+for i, row in enumerate(y_pred_custom):
+    if row.sum() == 0:
+        y_pred_custom[i][np.argmax(y_pred_proba[i])] = 1
 
-print(f"\nThreshold tốt nhất : {best_threshold:.2f}")
-print(f"F1-macro tốt nhất  : {best_f1:.4f}")
+print(f"F1-macro : {f1_score(y_test, y_pred_custom, average='macro', zero_division=0):.4f}")
+print(f"Hamming  : {hamming_loss(y_test, y_pred_custom):.4f}")
+print(classification_report(y_test, y_pred_custom,
+                             target_names=mlb.classes_, zero_division=0))
 
 # ── CELL 13: ĐÁNH GIÁ ───────────────────────────────────────────
 y_pred_opt = (y_pred_proba >= best_threshold).astype(int)
@@ -543,6 +637,9 @@ plt.tight_layout()
 plt.savefig('roc_rnn.png', dpi=150, bbox_inches='tight')
 plt.show()
 print("\nĐã lưu: roc_rnn.png")
+
+# công thức: tp-fp
+# x_max= tp-fp -> tp max - fpmin
 
 # ── CELL 15: DỰ ĐOÁN CHI TIẾT ───────────────────────────────────
 print("\n── Dự đoán chi tiết (threshold tối ưu) ──\n")
@@ -603,6 +700,7 @@ def visualize_attention(title: str, content: str = "", top_n: int = 10):
     print(f"  {'Từ':<20} {'Weight':>8}")
     print("  " + "-" * 30)
     for idx in top_idx:
+      # if tokens[idx] !="[SEP]": ALOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
         print(f"  {tokens[idx]:<20} {attn_weights[idx]:>8.4f}")
 
 # Thử nghiệm
